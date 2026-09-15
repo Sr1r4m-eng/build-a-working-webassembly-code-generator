@@ -1,0 +1,1 @@
+fn main() { let keep = true; while (keep) { keep = false; } return keep; }

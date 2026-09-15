@@ -1,6 +1,6 @@
 """Component: CODEGEN — IR constant folding and WebAssembly text emission."""
 from ir import *
-OPS={'+':'i32.add','-':'i32.sub','*':'i32.mul','/':'i32.div_s','==':'i32.eq','!=':'i32.ne','<':'i32.lt_s','<=':'i32.le_s','>':'i32.gt_s','>=':'i32.ge_s'}
+OPS={'+':'i32.add','-':'i32.sub','*':'i32.mul','/':'i32.div_s','==':'i32.eq','!=':'i32.ne','<':'i32.lt_s','<=':'i32.le_s','>':'i32.gt_s','>=':'i32.ge_s','&&':'i32.and','||':'i32.or'}
 def optimize(program):
  """Fold a binary operation when both operands are known integer constants."""
  for f in program.functions:
@@ -23,29 +23,53 @@ def optimize(program):
   f.code=out
  return program
 def emit(program):
- lines=['(module']
- for f in program.functions:
-  export=' (export "main")' if f.name=='main' else ''
-  params=' '.join(f'(param ${p} i32)' for p in f.params); locals=' '.join(f'(local ${x} i32)' for x in f.locals if x not in f.params)
-  lines.append(f'  (func ${f.name}{export} {params} (result i32) {locals}'.rstrip())
-  indent='    '; loop=0
-  for i in f.code:
-   o,a=i.op,i.args
-   if o=='const': lines+= [f'{indent}i32.const {a[0]}',f'{indent}local.set ${a[1]}']
-   elif o=='copy': lines += [f'{indent}local.get ${a[0]}',f'{indent}local.set ${a[1]}']
-   elif o=='neg': lines += [f'{indent}i32.const 0',f'{indent}local.get ${a[0]}',f'{indent}i32.sub',f'{indent}local.set ${a[1]}']
-   elif o=='bin': lines += [f'{indent}local.get ${a[1]}',f'{indent}local.get ${a[2]}',f'{indent}{OPS[a[0]]}',f'{indent}local.set ${a[3]}']
-   elif o=='call':
-    for x in a[1:-1]:lines.append(f'{indent}local.get ${x}')
-    lines += [f'{indent}call ${a[0]}',f'{indent}local.set ${a[-1]}']
-   elif o=='return': lines += [f'{indent}local.get ${a[0]}',f'{indent}return']
-   elif o=='if':lines += [f'{indent}local.get ${a[0]}',f'{indent}if'];indent+='  '
-   elif o=='else':indent=indent[:-2];lines.append(f'{indent}else');indent+='  '
-   elif o=='loop': lines += [f'{indent}block',f'{indent}  loop']; indent+='    ';loop+=1
-   elif o=='br_if_not':lines += [f'{indent}local.get ${a[0]}',f'{indent}i32.eqz',f'{indent}br_if 1']
-   elif o=='br':lines.append(f'{indent}br 0')
-   elif o=='end':
-    if loop: indent=indent[:-4];lines += [f'{indent}  end',f'{indent}end'];loop-=1
-    else: indent=indent[:-2];lines.append(f'{indent}end')
-  lines.append('  )')
- lines.append(')');return '\n'.join(lines)+'\n'
+  lines = ['(module']
+  for f in program.functions:
+    export = ' (export "main")' if f.name == 'main' else ''
+    params = ' '.join(f'(param ${p} i32)' for p in f.params)
+    locals_ = ' '.join(f'(local ${x} i32)' for x in f.locals if x not in f.params)
+    lines.append(f'  (func ${f.name}{export} {params} (result i32) {locals_}'.rstrip())
+    indent = '    '
+    loop = 0
+    for instruction in f.code:
+      op, args = instruction.op, instruction.args
+      if op == 'const':
+        lines += [f'{indent}i32.const {args[0]}', f'{indent}local.set ${args[1]}']
+      elif op == 'copy':
+        lines += [f'{indent}local.get ${args[0]}', f'{indent}local.set ${args[1]}']
+      elif op == 'neg':
+        lines += [f'{indent}i32.const 0', f'{indent}local.get ${args[0]}', f'{indent}i32.sub', f'{indent}local.set ${args[1]}']
+      elif op == 'bin':
+        lines += [f'{indent}local.get ${args[1]}', f'{indent}local.get ${args[2]}', f'{indent}{OPS[args[0]]}', f'{indent}local.set ${args[3]}']
+      elif op == 'call':
+        for name in args[1:-1]:
+          lines.append(f'{indent}local.get ${name}')
+        lines += [f'{indent}call ${args[0]}', f'{indent}local.set ${args[-1]}']
+      elif op == 'return':
+        lines += [f'{indent}local.get ${args[0]}', f'{indent}return']
+      elif op == 'if':
+        lines += [f'{indent}local.get ${args[0]}', f'{indent}if']
+        indent += '  '
+      elif op == 'else':
+        indent = indent[:-2]
+        lines.append(f'{indent}else')
+        indent += '  '
+      elif op == 'loop':
+        lines += [f'{indent}block', f'{indent}  loop']
+        indent += '    '
+        loop += 1
+      elif op == 'br_if_not':
+        lines += [f'{indent}local.get ${args[0]}', f'{indent}i32.eqz', f'{indent}br_if 1']
+      elif op == 'br':
+        lines.append(f'{indent}br 0')
+      elif op == 'end':
+        if loop:
+          indent = indent[:-4]
+          lines += [f'{indent}  end', f'{indent}end']
+          loop -= 1
+        else:
+          indent = indent[:-2]
+          lines.append(f'{indent}end')
+    lines.append('  )')
+  lines.append(')')
+  return '\n'.join(lines) + '\n'

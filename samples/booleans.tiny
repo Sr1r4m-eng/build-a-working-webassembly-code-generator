@@ -1,0 +1,1 @@
+fn main() { let ready = true; let allowed = !false && ready || false; if (allowed) { return 1; } else { return 0; } }

@@ -9,8 +9,8 @@ statement = "let" IDENT ["=" expr] ";" | IDENT "=" expr ";" | "return" expr ";"
 expr = equality ; equality = comparison { ("==" | "!=") comparison } ;
 comparison = term { ("<" | "<=" | ">" | ">=") term } ;
 term = factor { ("+" | "-") factor } ; factor = unary { ("*" | "/") unary } ;
-unary = ["-"] primary ; primary = NUMBER | IDENT ["(" [args] ")"] | "(" expr ")" .
-All values are i32.
+ unary = ["-" | "!"] primary ; primary = NUMBER | "true" | "false" | IDENT ["(" [args] ")"] | "(" expr ")" .
+Integer and boolean values are represented as i32.
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -37,6 +37,8 @@ class ExprStmt: value: object
 @dataclass
 class Number: value: int
 @dataclass
+class Boolean: value: bool
+@dataclass
 class Var: name: str
 @dataclass
 class Binary: op: str; left: object; right: object
@@ -45,8 +47,8 @@ class Unary: op: str; value: object
 @dataclass
 class Call: name: str; args: list
 
-_LEX = re.compile(r'\s+|//[^\n]*|(?P<num>\d+)|(?P<id>[A-Za-z_]\w*)|(?P<op>==|!=|<=|>=|[+\-*/<>=(){};,])')
-KEYWORDS = {"fn", "let", "return", "if", "else", "while"}
+_LEX = re.compile(r'\s+|//[^\n]*|(?P<num>\d+)|(?P<id>[A-Za-z_]\w*)|(?P<op>==|!=|<=|>=|&&|\|\||[+\-*/!<>=(){};,])')
+KEYWORDS = {"fn", "let", "return", "if", "else", "while", "true", "false"}
 def tokenize(source: str) -> list[Token]:
     """Convert source into tokens; comments and whitespace are ignored."""
     out=[]; at=0
@@ -95,15 +97,20 @@ class Parser:
             n=self.take("IDENT").text; self.take("="); v=self.expr(); self.take(";"); return Assign(n,v)
         v=self.expr(); self.take(";"); return ExprStmt(v)
     def expr(self): return self.binary(0)
-    _PREC={"==":1,"!=":1,"<":2,"<=":2,">":2,">=":2,"+":3,"-":3,"*":4,"/":4}
+    _PREC={"||":1,"&&":2,"==":3,"!=":3,"<":4,"<=":4,">":4,">=":4,"+":5,"-":5,"*":6,"/":6}
     def binary(self, minimum):
         left=self.unary()
         while self.peek().kind in self._PREC and self._PREC[self.peek().kind]>=minimum:
             op=self.take(self.peek().kind).text; p=self._PREC[op]; right=self.binary(p+1); left=Binary(op,left,right)
         return left
-    def unary(self): return Unary("-",self.unary()) if self.accept("-") else self.primary()
+    def unary(self):
+        if self.accept("-"): return Unary("-",self.unary())
+        if self.accept("!"): return Unary("!",self.unary())
+        return self.primary()
     def primary(self):
         if self.peek().kind=="NUMBER": return Number(int(self.take("NUMBER").text))
+        if self.accept("true"): return Boolean(True)
+        if self.accept("false"): return Boolean(False)
         if self.peek().kind=="IDENT":
             n=self.take("IDENT").text
             if self.accept("("):
