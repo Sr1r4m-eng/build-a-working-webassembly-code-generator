@@ -1,15 +1,20 @@
 """Component: IR — semantic checking and three-address-code lowering."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from frontend import *
 @dataclass
 class Instr: op:str; args:tuple=()
 @dataclass
 class IRFunction: name:str; params:list[str]; locals:list[str]; code:list[Instr]
 @dataclass
-class IRProgram: functions:list[IRFunction]
+class IRProgram: functions:list[IRFunction]; strings:list[tuple[int,str]] = field(default_factory=list)
 class Lower:
- def __init__(self, prog): self.prog=prog; self.names={f.name:len(f.params) for f in prog.functions}; self.n=0
- def run(self): return IRProgram([self.fn(f) for f in self.prog.functions])
+ def __init__(self, prog): self.prog=prog; self.names={f.name:len(f.params) for f in prog.functions}; self.n=0; self.strings=[]; self.string_offset=0
+ def run(self): return IRProgram([self.fn(f) for f in self.prog.functions], self.strings)
+ def alloc_string(self, value):
+  offset = self.string_offset
+  self.string_offset += len(value.encode('utf-8')) + 1
+  self.strings.append((offset, value))
+  return offset
  def fn(self,f):
   self.code=[]; self.locals=list(f.params); self.scope=set(f.params); self.types={p:'int' for p in f.params}; self.n=0
   for s in f.body:self.stmt(s)
@@ -22,6 +27,9 @@ class Lower:
  def expr(self,x):
   if isinstance(x,Number): t=self.temp('int');self.emit('const',x.value,t);return t
   if isinstance(x,Boolean): t=self.temp('bool');self.emit('const',int(x.value),t);return t
+  if isinstance(x,StringLiteral):
+   offset=self.alloc_string(x.value)
+   t=self.temp('string'); self.emit('string_const',offset,t); return t
   if isinstance(x,Var):
    if x.name not in self.scope:raise NameError(f'undefined variable {x.name}')
    return x.name

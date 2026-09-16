@@ -1,6 +1,6 @@
 # TinyWasm Code Generator
 
-A dependency-free Python compiler for a deliberately small, integer-only language. It produces valid WebAssembly text (`.wat`); install [WABT](https://github.com/WebAssembly/wabt) for the optional `wat2wasm` conversion.
+A dependency-free Python compiler for a deliberately small language with integer arithmetic and string literals. It produces valid WebAssembly text (`.wat`); install [WABT](https://github.com/WebAssembly/wabt) for the optional `wat2wasm` conversion.
 
 ## Team architecture
 
@@ -21,7 +21,7 @@ python driver.py samples/while_loop.tiny --wasm   # requires wat2wasm on PATH
 python -m unittest -v
 ```
 
-The language supports `fn`, `let`, assignment, signed integer arithmetic/comparisons, `if/else`, `while`, `return`, and calls. All values and function returns are `i32`. Its full EBNF is documented in `frontend.py`.
+The language supports `fn`, `let`, assignment, signed integer arithmetic/comparisons, string literals, `if/else`, `while`, `return`, and calls. Integer values and function returns are `i32`, while string literals compile to a module-level memory offset and return the pointer as an `i32`. Its full EBNF is documented in `frontend.py`.
 
 ## Worked path
 

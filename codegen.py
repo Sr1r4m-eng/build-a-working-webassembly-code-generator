@@ -1,6 +1,11 @@
 """Component: CODEGEN — IR constant folding and WebAssembly text emission."""
 from ir import *
 OPS={'+':'i32.add','-':'i32.sub','*':'i32.mul','/':'i32.div_s','==':'i32.eq','!=':'i32.ne','<':'i32.lt_s','<=':'i32.le_s','>':'i32.gt_s','>=':'i32.ge_s','&&':'i32.and','||':'i32.or'}
+
+def _wat_string(value: str) -> str:
+    escaped = value.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+    return f'"{escaped}"'
+
 def optimize(program):
  """Fold a binary operation when both operands are known integer constants."""
  for f in program.functions:
@@ -24,6 +29,10 @@ def optimize(program):
  return program
 def emit(program):
   lines = ['(module']
+  if getattr(program, 'strings', None):
+    lines.append('  (memory 1)')
+    for offset, value in program.strings:
+      lines.append(f'  (data (i32.const {offset}) {_wat_string(value)})')
   for f in program.functions:
     export = ' (export "main")' if f.name == 'main' else ''
     params = ' '.join(f'(param ${p} i32)' for p in f.params)
@@ -33,7 +42,7 @@ def emit(program):
     loop = 0
     for instruction in f.code:
       op, args = instruction.op, instruction.args
-      if op == 'const':
+      if op in ('const','string_const'):
         lines += [f'{indent}i32.const {args[0]}', f'{indent}local.set ${args[1]}']
       elif op == 'copy':
         lines += [f'{indent}local.get ${args[0]}', f'{indent}local.set ${args[1]}']
