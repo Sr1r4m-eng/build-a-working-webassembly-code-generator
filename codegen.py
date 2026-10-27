@@ -30,7 +30,7 @@ def emit(program):
     locals_ = ' '.join(f'(local ${x} i32)' for x in f.locals if x not in f.params)
     lines.append(f'  (func ${f.name}{export} {params} (result i32) {locals_}'.rstrip())
     indent = '    '
-    loop = 0
+    control_stack = []
     for instruction in f.code:
       op, args = instruction.op, instruction.args
       if op == 'const':
@@ -50,6 +50,7 @@ def emit(program):
       elif op == 'if':
         lines += [f'{indent}local.get ${args[0]}', f'{indent}if']
         indent += '  '
+        control_stack.append('if')
       elif op == 'else':
         indent = indent[:-2]
         lines.append(f'{indent}else')
@@ -57,16 +58,16 @@ def emit(program):
       elif op == 'loop':
         lines += [f'{indent}block', f'{indent}  loop']
         indent += '    '
-        loop += 1
+        control_stack.append('loop')
       elif op == 'br_if_not':
         lines += [f'{indent}local.get ${args[0]}', f'{indent}i32.eqz', f'{indent}br_if 1']
       elif op == 'br':
         lines.append(f'{indent}br 0')
       elif op == 'end':
-        if loop:
+        control = control_stack.pop()
+        if control == 'loop':
           indent = indent[:-4]
           lines += [f'{indent}  end', f'{indent}end']
-          loop -= 1
         else:
           indent = indent[:-2]
           lines.append(f'{indent}end')

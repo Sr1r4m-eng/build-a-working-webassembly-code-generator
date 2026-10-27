@@ -10,4 +10,9 @@ class PipelineTests(unittest.TestCase):
     expected=(pathlib.Path('expected') / f'{name}.wat').read_text()
     self.assertEqual(wat,expected)
  def test_constant_folding(self):self.assertIn('i32.const 7',compile_source(CASES['arithmetic']))
+ def test_nested_if_inside_loop(self):
+  source='fn main() { while (true) { if (false) { return 1; } return 0; } }'
+  wat=compile_source(source)
+  self.assertIn('        end\n        i32.const 0\n',wat)
+  self.assertIn('      end\n    end\n',wat)
 if __name__=='__main__':unittest.main()
