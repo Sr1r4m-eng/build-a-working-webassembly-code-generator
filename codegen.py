@@ -39,7 +39,7 @@ def emit(program):
     locals_ = ' '.join(f'(local ${x} i32)' for x in f.locals if x not in f.params)
     lines.append(f'  (func ${f.name}{export} {params} (result i32) {locals_}'.rstrip())
     indent = '    '
-    loop = 0
+    control_stack = []
     for instruction in f.code:
       op, args = instruction.op, instruction.args
       if op in ('const','string_const'):
@@ -58,24 +58,29 @@ def emit(program):
         lines += [f'{indent}local.get ${args[0]}', f'{indent}return']
       elif op == 'if':
         lines += [f'{indent}local.get ${args[0]}', f'{indent}if']
+        control_stack.append('if')
         indent += '  '
       elif op == 'else':
+        if not control_stack or control_stack[-1] != 'if':
+          raise ValueError('else without a matching if')
         indent = indent[:-2]
         lines.append(f'{indent}else')
         indent += '  '
       elif op == 'loop':
         lines += [f'{indent}block', f'{indent}  loop']
         indent += '    '
-        loop += 1
+        control_stack.append('loop')
       elif op == 'br_if_not':
         lines += [f'{indent}local.get ${args[0]}', f'{indent}i32.eqz', f'{indent}br_if 1']
       elif op == 'br':
         lines.append(f'{indent}br 0')
       elif op == 'end':
-        if loop:
+        if not control_stack:
+          raise ValueError('end without an open control construct')
+        construct = control_stack.pop()
+        if construct == 'loop':
           indent = indent[:-4]
           lines += [f'{indent}  end', f'{indent}end']
-          loop -= 1
         else:
           indent = indent[:-2]
           lines.append(f'{indent}end')
