@@ -75,7 +75,10 @@ def emit(program):
       elif op == 'br':
         lines.append(f'{indent}br 0')
       elif op == 'end':
-        if loop:
+        if not control_stack:
+          raise ValueError('end without a matching control structure')
+        control = control_stack.pop()
+        if control == 'loop':
           indent = indent[:-4]
           lines += [f'{indent}  end', f'{indent}end']
         else:
