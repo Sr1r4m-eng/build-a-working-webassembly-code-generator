@@ -1,7 +1,7 @@
 """Component: DRIVER — end-to-end sample-program tests."""
 import unittest, pathlib
 from driver import compile_source
-CASES={'arithmetic':'fn main() { return 1 + 2 * 3; }','variables':'fn main() { let x = 4; x = x + 3; return x; }','if_else':'fn main() { let x = 1; if (x) { return 7; } else { return 9; } }','while_loop':'fn main() { let x = 0; while (x < 3) { x = x + 1; } return x; }','calls':'fn add(a,b) { return a + b; } fn main() { return add(2, 5); }','int_math':'fn main() { return (8 / 2) * 3 - 1; }','int_compare':'fn main() { if (4 < 9) { return 1; } else { return 0; } }'}
+CASES={'arithmetic':'fn main() { return 1 + 2 * 3; }','variables':'fn main() { let x = 4; x = x + 3; return x; }','if_else':'fn main() { let x = 1; if (x) { return 7; } else { return 9; } }','while_loop':'fn main() { let x = 0; while (x < 3) { x = x + 1; } return x; }','calls':'fn add(a,b) { return a + b; } fn main() { return add(2, 5); }','int_math':'fn main() { return (8 / 2) * 3 - 1; }','int_compare':'fn main() { if (4 < 9) { return 1; } else { return 0; } }','string_literal':'fn main() { let s = "hello"; return s; }','nested_control':'fn main() { let x = 0; while (x < 3) { if (x == 1) { x = x + 1; } else { x = x + 1; } } return x; }'}
 class PipelineTests(unittest.TestCase):
  def test_samples(self):
   for name,source in CASES.items():

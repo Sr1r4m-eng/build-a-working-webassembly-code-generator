@@ -39,6 +39,8 @@ class Number: value: int
 @dataclass
 class Boolean: value: bool
 @dataclass
+class StringLiteral: value: str
+@dataclass
 class Var: name: str
 @dataclass
 class Binary: op: str; left: object; right: object
@@ -47,7 +49,26 @@ class Unary: op: str; value: object
 @dataclass
 class Call: name: str; args: list
 
-_LEX = re.compile(r'\s+|//[^\n]*|(?P<num>\d+)|(?P<id>[A-Za-z_]\w*)|(?P<op>==|!=|<=|>=|&&|\|\||[+\-*/!<>=(){};,])')
+def _decode_string_literal(text: str) -> str:
+    if len(text) < 2 or text[0] != '"' or text[-1] != '"':
+        raise SyntaxError(f"invalid string literal {text!r}")
+    out = []
+    i = 1
+    while i < len(text) - 1:
+        ch = text[i]
+        if ch == '\\':
+            i += 1
+            if i >= len(text) - 1:
+                raise SyntaxError(f"unterminated escape in string literal {text!r}")
+            esc = text[i]
+            mapping = {'n': '\n', 'r': '\r', 't': '\t', '"': '"', "'": "'", '\\': '\\'}
+            out.append(mapping.get(esc, esc))
+        else:
+            out.append(ch)
+        i += 1
+    return ''.join(out)
+
+_LEX = re.compile(r'\s+|//[^\n]*|(?P<num>\d+)|(?P<str>"(?:\\.|[^"\\])*")|(?P<id>[A-Za-z_]\w*)|(?P<op>==|!=|<=|>=|&&|\|\||[+\-*/!<>=(){};,])')
 KEYWORDS = {"fn", "let", "return", "if", "else", "while", "true", "false"}
 def tokenize(source: str) -> list[Token]:
     """Convert source into tokens; comments and whitespace are ignored."""
@@ -56,7 +77,10 @@ def tokenize(source: str) -> list[Token]:
         if m.start()!=at: raise SyntaxError(f"unexpected character at {at}")
         at=m.end(); text=m.group()
         if text.isspace() or text.startswith('//'): continue
-        kind="NUMBER" if m.lastgroup=="num" else (text if text in KEYWORDS else ("IDENT" if m.lastgroup=="id" else text))
+        if m.lastgroup == "str":
+            kind = "STRING"
+        else:
+            kind = "NUMBER" if m.lastgroup == "num" else (text if text in KEYWORDS else ("IDENT" if m.lastgroup == "id" else text))
         out.append(Token(kind,text,m.start()))
     if at != len(source): raise SyntaxError(f"unexpected character at {at}")
     return out+[Token("EOF","",len(source))]
@@ -109,6 +133,7 @@ class Parser:
         return self.primary()
     def primary(self):
         if self.peek().kind=="NUMBER": return Number(int(self.take("NUMBER").text))
+        if self.peek().kind=="STRING": return StringLiteral(_decode_string_literal(self.take("STRING").text))
         if self.accept("true"): return Boolean(True)
         if self.accept("false"): return Boolean(False)
         if self.peek().kind=="IDENT":
