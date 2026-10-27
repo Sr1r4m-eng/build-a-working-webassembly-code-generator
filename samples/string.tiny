@@ -1,0 +1,6 @@
+fn main() {
+  let greeting = "hello";
+  let name = "Sriram";
+  let msg = "Tab\there, quote: \"ok\"";
+  return name;
+}

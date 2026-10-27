@@ -1,0 +1,192 @@
+
+fn abs_value(n) {
+    if (n < 0) {
+        return 0 - n;
+    } else {
+        return n;
+    }
+}
+
+fn max_value(a, b) {
+    if (a > b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+fn min_value(a, b) {
+    if (a < b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+fn factorial(n) {
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+fn fibonacci(n) {
+    if (n <= 1) {
+        return n;
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+}
+
+fn gcd(a, b) {
+    while (b != 0) {
+        let remainder = a - (a / b) * b;
+        a = b;
+        b = remainder;
+    }
+    return a;
+}
+
+fn sum_range(n) {
+    let total = 0;
+    let i = 1;
+
+    while (i <= n) {
+        total = total + i;
+        i = i + 1;
+    }
+
+    return total;
+}
+
+fn is_even(n) {
+    if (n / 2 * 2 == n) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+fn classify(n) {
+    if (n < 0) {
+        return 1;
+    } else {
+        if (n == 0) {
+            return 2;
+        } else {
+            if (n < 10) {
+                return 3;
+            } else {
+                return 4;
+            }
+        }
+    }
+}
+
+fn nested_loop_test(limit) {
+    let i = 0;
+    let total = 0;
+
+    while (i < limit) {
+        let j = 0;
+
+        while (j < limit) {
+            if (i != j) {
+                total = total + i + j;
+            } else {
+                total = total + 1;
+            }
+
+            j = j + 1;
+        }
+
+        i = i + 1;
+    }
+
+    return total;
+}
+
+fn arithmetic_test(a, b, c) {
+    let x = a + b * c;
+    let y = (a + b) * c;
+    let z = a - b - c;
+    let w = a / b;
+
+    return x + y + z + w;
+}
+
+fn logical_test(a, b) {
+    if ((a > 0 && b > 0) || (a == 0)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+fn string_pointer_test() {
+    let greeting = "Hello, WebAssembly!";
+    let empty = "";
+    let escaped = "First line\nSecond line\tTabbed";
+    let quote = "She said: \"Hello!\"";
+    let slash = "C:\\tiny\\output";
+
+    return 0;
+}
+
+fn calculate_score(base, bonus, penalty) {
+    let score = base + bonus - penalty;
+
+    if (score < 0) {
+        return 0;
+    } else {
+        return score;
+    }
+}
+
+fn main() {
+    let a = 17;
+    let b = 5;
+    let c = 3;
+
+    let absolute = abs_value(0 - a);
+    let maximum = max_value(a, b);
+    let minimum = min_value(a, b);
+
+    let fact = factorial(6);
+    let fib = fibonacci(10);
+    let divisor = gcd(48, 18);
+    let total = sum_range(100);
+
+    let even_result = is_even(42);
+    let odd_result = is_even(17);
+
+    let category_a = classify(0);
+    let category_b = classify(7);
+    let category_c = classify(15);
+    let category_d = classify(0 - 4);
+
+    let nested = nested_loop_test(5);
+    let arithmetic = arithmetic_test(a, b, c);
+
+    let logic_a = logical_test(5, 8);
+    let logic_b = logical_test(0, 8);
+
+    let score = calculate_score(80, 15, 20);
+
+    if (fact == 720 && fib == 55) {
+        if (divisor == 6 && total == 5050) {
+            if (maximum == 17 && minimum == 5) {
+                return score + absolute + nested + arithmetic
+                    + category_a + category_b + category_c + category_d
+                    + even_result + odd_result + logic_a + logic_b;
+            } else {
+                return 101;
+            }
+        } else {
+            return 102;
+        }
+    } else {
+        return 103;
+    }
+}

@@ -11,7 +11,7 @@ source (.tiny) → FRONTEND → AST → IR → checked TAC IR → CODEGEN → op
                               DRIVER (driver.py, tests)
 ```
 
-Each file starts with its owning component and exposes one main function: `parse`, `lower`, `optimize`/`emit`, and `compile_source`. This makes the four areas independently maintainable.
+Each file starts with its owning component and exposes one main function: `parse`, `lower`, `optimize`/`emit`, and `compile_source`. The code generator folds constants, removes unused pure temporaries and string data, and emits single-use expressions directly on the WebAssembly operand stack.
 
 ## Run
 
@@ -31,12 +31,10 @@ For `fn main() { return 1 + 2 * 3; }`:
 tokens: fn, IDENT(main), (, ), {, return, NUMBER(1), +, NUMBER(2), *, NUMBER(3), ;, }
 AST: Program([Function('main', [], [Return(Binary('+', Number(1), Binary('*', Number(2), Number(3))))])])
 IR:  const 1 → _t1; const 2 → _t2; const 3 → _t3; bin * _t2 _t3 → _t4; bin + _t1 _t4 → _t5; return _t5
-WAT (after folding):
+WAT (after folding and stackification):
 (module
-  (func $main (export "main") (result i32) (local $_t1 i32) ...
+  (func $main (export "main") (result i32)
     i32.const 7
-    local.set $_t5
-    local.get $_t5
     return
   )
 )

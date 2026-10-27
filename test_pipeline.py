@@ -15,4 +15,25 @@ class PipelineTests(unittest.TestCase):
   wat=compile_source(source)
   self.assertIn('        end\n        i32.const 0\n',wat)
   self.assertIn('      end\n    end\n',wat)
+ def test_single_use_temporaries_are_emitted_on_the_stack(self):
+  wat=compile_source('fn main() { return (1 + 2) * 3; }')
+  self.assertIn('i32.const 9\n    return',wat)
+  self.assertNotIn('(local $_t',wat)
+  self.assertNotIn('local.set',wat)
+  self.assertNotIn('local.get',wat)
+ def test_unused_string_data_is_removed(self):
+  wat=compile_source('fn main() { let unused = "not referenced"; return 0; }')
+  self.assertNotIn('(memory',wat)
+  self.assertNotIn('(data',wat)
+  self.assertNotIn('$unused',wat)
+ def test_unused_call_expression_keeps_its_side_effect(self):
+  wat=compile_source('fn effect() { return 1; } fn main() { effect(); return 0; }')
+  self.assertIn('call $effect',wat)
+ def test_fallback_return_is_removed_when_both_if_branches_return(self):
+  wat=compile_source('fn main() { if (true) { return 1; } else { return 2; } }')
+  self.assertNotIn('i32.const 0',wat)
+  self.assertEqual(wat.count('return'),2)
+ def test_fallback_return_remains_when_if_has_no_else(self):
+  wat=compile_source('fn main() { if (true) { return 1; } }')
+  self.assertIn('i32.const 0',wat)
 if __name__=='__main__':unittest.main()
